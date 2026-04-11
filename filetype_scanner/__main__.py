@@ -49,12 +49,15 @@ def generate_extensions_file(stats: Counter[str]) -> None:
     Creates a formatted Python file with extensions in a vertical list.
     """
     extensions = sorted([ext for ext in stats.keys() if ext != "no_ext"])
+    has_no_ext = "no_ext" in stats
     script_dir = Path(__file__).resolve().parent
     output_path = script_dir / "allowed_extensions.py"
 
-    variable_name = "VARIABLE_EXTENSIONS"
+    variable_name = "ALLOWED_EXTENSIONS"
 
     lines = [f'    "{ext}",' for ext in extensions]
+    if has_no_ext:
+        lines.append('    "",  # no extension files')
     list_content = "\n".join(lines)
     content = f"{variable_name} = [\n{list_content}\n]\n"
 
@@ -119,7 +122,7 @@ def main() -> None:
     )
 
     if len(sys.argv) < 2:
-        print("Run python3 filetype-scanner <folder_to_scan>", file=sys.stderr)
+        print("Run python3 filetype_scanner <folder_to_scan>", file=sys.stderr)
         sys.exit(1)
 
     args = parser.parse_args()

@@ -1,32 +1,22 @@
 # Logic to load the BM25 index and return Top-K chunks
+from collections.abc import Iterator
 from pathlib import Path
+from filetype_scanner.allowed_extensions import ALLOWED_EXTENSIONS
 
 
 class RepositoryReader:
     """Reads specified text files from a given repository directory."""
 
-    def __init__(
-        self,
-        path: str,
-        extensions: tuple[str, ...] = (
-            ".py", ".md", ".txt", ".sh", ".yaml", ".yml",
-            ".json", ".toml", ".rst", ".c", ".cpp", ".h"
-        )
-    ) -> None:
-        """Initialize the reader with a path and allowed extensions."""
+    def __init__(self, path: str) -> None:
+        """Initialize the reader with a path."""
         self.path = Path(path)
-        self.extensions = extensions
 
-    def get_files_content(self) -> dict[str, str]:
-        """Extract content from files matching the allowed extensions."""
-        content = {}
-
+    def get_files_content(self) -> Iterator[tuple[str, str]]:
+        """Extract content from files matching allowed extensions."""
         for file_path in self.path.rglob("*"):
-            if file_path.is_file() and file_path.suffix in self.extensions:
+            if file_path.is_file() and file_path.suffix in ALLOWED_EXTENSIONS:
                 try:
-                    text = file_path.read_text(encoding="utf-8")
-                    content[str(file_path)] = text
-                except UnicodeDecodeError:
+                    content = file_path.read_text(encoding="utf-8")
+                    yield str(file_path), content
+                except (UnicodeDecodeError, OSError):
                     pass
-
-        return content
