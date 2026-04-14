@@ -1,0 +1,5 @@
+DEFAULT_INDEX_PATH = "data/processed/bm25_index"
+
+DEFAULT_CHUNK_SIZE = 2000
+
+DOCS_PER_QUERY = 5

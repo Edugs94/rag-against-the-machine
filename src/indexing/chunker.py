@@ -1,12 +1,13 @@
 # Logic to split Python and Markdown files
 from collections.abc import Iterator
 from typing import Any
+from src.constants import DEFAULT_CHUNK_SIZE
 
 
 class TextChunker:
     """Splits text into chunks and tracks character indices."""
 
-    def __init__(self, max_size: int = 2000) -> None:
+    def __init__(self, max_size: int = DEFAULT_CHUNK_SIZE) -> None:
         """Initialize with the maximum chunk size."""
         self.max_size = max_size
 
