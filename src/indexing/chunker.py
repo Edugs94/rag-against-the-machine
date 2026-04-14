@@ -41,7 +41,10 @@ class TextChunker:
             for sep in separators:
                 found_idx = text.rfind(sep, start, end)
                 if found_idx != -1:
-                    split_idx = found_idx + len(sep)
+                    if sep in ("\nclass ", "\ndef "):
+                        split_idx = found_idx + 1
+                    else:
+                        split_idx = found_idx + len(sep)
                     break
 
             if split_idx == -1:
