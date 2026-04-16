@@ -5,7 +5,7 @@ from transformers import (
     AutoModelForCausalLM,
     PreTrainedTokenizerBase,
     PreTrainedModel,
-    BatchEncoding
+    BatchEncoding,
 )
 
 
@@ -27,6 +27,10 @@ class LLM:
     def generate(self, prompt: str) -> str:
         """Generates a text response from a given prompt."""
         inputs: BatchEncoding = self.tokenizer(prompt, return_tensors="pt")
-        outputs: torch.Tensor = self.model.generate(**inputs, max_new_tokens=500)
-        response: str = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        outputs: torch.Tensor = self.model.generate(
+            **inputs, max_new_tokens=500
+        )
+        response: str = self.tokenizer.decode(
+            outputs[0], skip_special_tokens=True
+        )
         return response

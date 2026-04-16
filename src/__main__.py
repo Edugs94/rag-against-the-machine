@@ -2,6 +2,7 @@ import fire
 import json
 from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
+from src.pipeline import RAGPipeline
 from src.constants import (
     DEFAULT_INDEX_PATH,
     DEFAULT_CHUNK_SIZE,
@@ -25,12 +26,18 @@ class RAGCli:
             max_chunk_size=max_chunk_size,
         )
         index_builder.build()
+        print(f"Ingestion complete! Indices saved under {repo_path}")
 
     def search(self, query: str, k: int = DOCS_PER_QUERY) -> None:
         """Search the most relevant chunks in the index for a query."""
         searcher = Searcher()
         results = searcher.search(query, k=k)
         print(json.dumps(results, indent=2))
+
+    def answer(self, query: str, k: int = DOCS_PER_QUERY) -> None:
+        """Responds to a single query with retrieved chunks by BM25."""
+        pipeline = RAGPipeline()
+        print(pipeline.answer(query, k))
 
 
 def main() -> None:
