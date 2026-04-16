@@ -25,12 +25,23 @@ class LLM:
         )
 
     def generate(self, prompt: str) -> str:
-        """Generates a text response from a given prompt."""
-        inputs: BatchEncoding = self.tokenizer(prompt, return_tensors="pt")
+        """Generates a text response using the Qwen model."""
+        inputs: BatchEncoding = self.tokenizer(
+            prompt, return_tensors="pt"
+        )
+
         outputs: torch.Tensor = self.model.generate(
-            **inputs, max_new_tokens=500
+            **inputs,
+            max_new_tokens=500
         )
+
+        input_length = inputs["input_ids"].shape[1]
+
+        generated_tokens = outputs[0][input_length:]
+
         response: str = self.tokenizer.decode(
-            outputs[0], skip_special_tokens=True
+            generated_tokens,
+            skip_special_tokens=True
         )
-        return response
+
+        return response.strip()
