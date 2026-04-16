@@ -51,7 +51,11 @@ class LLM:
         )
 
         clean_response: str = response.split("```")[0]
-        clean_response = clean_response.split("\n[")[0].strip()
-        clean_response = clean_response.split("\n\n")[0].strip()
+        clean_response = clean_response.split("\n[")[0]
+        clean_response = clean_response.split("\n\n")[0]
+
+        clean_response = clean_response.split("\n**")[0]
+        clean_response = clean_response.split("</")[0]
+        clean_response = clean_response.strip()
 
         return clean_response

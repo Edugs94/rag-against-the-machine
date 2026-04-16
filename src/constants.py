@@ -14,4 +14,7 @@ SYSTEM_RULES = (
     "If the answer is not in the context, you must respond: "
     "'I don't have enough information to answer that.' "
     "Do not invent code or explanations."
+    "Respond directly and concisely."
+    "Do not explain your reasoning."
+    "Do not use formatting tags like **Final Answer** or </answer>."
 )
