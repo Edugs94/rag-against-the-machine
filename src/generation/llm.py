@@ -7,14 +7,15 @@ from transformers import (
     PreTrainedModel,
     BatchEncoding,
 )
-from transformers.generation import GenerationMixin
+from transformers.generation.utils import GenerationMixin
 from typing import cast
+from src.constants import DEFAULT_LLM_MODEL
 
 
 class LLM:
     """Handles loading and generating answers with the Qwen model."""
 
-    def __init__(self, model_name: str = "Qwen/Qwen3-0.6B") -> None:
+    def __init__(self, model_name: str = DEFAULT_LLM_MODEL) -> None:
         """Loads the tokenizer and the model."""
         print(f"Loading model {model_name}...")
 
@@ -38,7 +39,7 @@ class LLM:
             temperature=None,
             top_p=None,
             top_k=None,
-            repetition_penalty=1.15,
+            repetition_penalty=1,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
         )

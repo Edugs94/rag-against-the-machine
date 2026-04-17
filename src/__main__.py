@@ -4,7 +4,8 @@ from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
 from src.pipeline import RAGPipeline
 from src.constants import (
-    DEFAULT_INDEX_PATH,
+    BM25_PATH,
+    CHROMA_DB_PATH,
     DEFAULT_CHUNK_SIZE,
     DOCS_PER_QUERY,
 )
@@ -16,13 +17,15 @@ class RAGCli:
     def index(
         self,
         repo_path: str,
-        save_path: str = DEFAULT_INDEX_PATH,
+        bm25_save_path: str = BM25_PATH,
+        chroma_path: str = CHROMA_DB_PATH,
         max_chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
-        """Index the repository and save the BM25 model."""
+        """Index the repository and save BM25 and Chroma models."""
         index_builder = IndexBuilder(
             folder_path=repo_path,
-            save_path=save_path,
+            bm25_save_path=bm25_save_path,
+            chroma_path=chroma_path,
             max_chunk_size=max_chunk_size,
         )
         index_builder.build()
@@ -35,7 +38,7 @@ class RAGCli:
         print(json.dumps(results, indent=2))
 
     def answer(self, query: str, k: int = DOCS_PER_QUERY) -> None:
-        """Responds to a single query with retrieved chunks by BM25."""
+        """Responds to a query with retrieved chunks by hybrid search."""
         pipeline = RAGPipeline()
         print(pipeline.answer(query, k))
 

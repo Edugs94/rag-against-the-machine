@@ -2,13 +2,13 @@
 from src.constants import SYSTEM_ROLE, SYSTEM_RULES
 
 
-def build_prompt(query: str, context: str) -> str:
-
+def build_prompt(query: str, chunks: list[dict]) -> str:
+    context = "\n\n---\n\n".join(
+        f"[Source: {c['file_path']}]\n{c['text']}" for c in chunks
+    )
     role = f"[ROLE]:\n{SYSTEM_ROLE}\n\n"
     rules = f"[RULES]:\n{SYSTEM_RULES}\n\n"
     context_str = f"[CONTEXT]:\n{context}\n\n"
     question = f"[QUESTION]:\n{query}\n\n"
-
     trigger = "[ANSWER]:\n"
-
     return role + rules + context_str + question + trigger
