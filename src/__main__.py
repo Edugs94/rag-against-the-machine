@@ -1,5 +1,10 @@
-import fire
+import os
 import json
+import fire
+import uuid
+from pathlib import Path
+from tqdm import tqdm
+
 from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
 from src.pipeline import RAGPipeline
@@ -8,6 +13,14 @@ from src.constants import (
     CHROMA_DB_PATH,
     DEFAULT_CHUNK_SIZE,
     DOCS_PER_QUERY,
+)
+from src.models import (
+    MinimalSource,
+    MinimalSearchResults,
+    StudentSearchResults,
+    MinimalAnswer,
+    StudentSearchResultsAndAnswer,
+    RagDataset,
 )
 
 
@@ -31,16 +44,185 @@ class RAGCli:
         index_builder.build()
         print(f"Ingestion complete! Indices saved under {repo_path}")
 
-    def search(self, query: str, k: int = DOCS_PER_QUERY) -> None:
-        """Search the most relevant chunks in the index for a query."""
+    def search(self, query: str, k: int = DOCS_PER_QUERY):
+        """
+        Search for a single query and return results in Pydantic JSON format.
+        """
         searcher = Searcher()
-        results = searcher.search(query, k=k)
-        print(json.dumps(results, indent=2))
 
-    def answer(self, query: str, k: int = DOCS_PER_QUERY) -> None:
-        """Responds to a query with retrieved chunks by hybrid search."""
+        raw_results = searcher.search(query, k=k)
+
+        minimal_sources = [
+            MinimalSource(
+                file_path=res["file_path"],
+                first_character_index=res["first_character_index"],
+                last_character_index=res["last_character_index"],
+            )
+            for res in raw_results
+        ]
+
+        result_output = StudentSearchResults(
+            search_results=[
+                MinimalSearchResults(
+                    question_id=str(uuid.uuid4()),
+                    question=query,
+                    retrieved_sources=minimal_sources,
+                )
+            ],
+            k=k,
+        )
+
+        print(result_output.model_dump_json(indent=2))
+
+    def answer(self, query: str, k: int = DOCS_PER_QUERY):
+        """Answer a single query using retrieved context."""
         pipeline = RAGPipeline()
-        print(pipeline.answer(query, k))
+        raw_results = pipeline.searcher.search(query, k=k)
+
+        context_texts = [res["text"] for res in raw_results]
+        context = "\n\n".join(context_texts)
+
+        prompt = (
+            f"Context:\n{context}\n\n" f"Question:\n{query}\n\n" f"Answer:"
+        )
+
+        answer_text = pipeline.llm.generate(prompt)
+
+        minimal_sources = [
+            MinimalSource(
+                file_path=res["file_path"],
+                first_character_index=res["first_character_index"],
+                last_character_index=res["last_character_index"],
+            )
+            for res in raw_results
+        ]
+
+        result_output = StudentSearchResultsAndAnswer(
+            search_results=[
+                MinimalAnswer(
+                    question_id=str(uuid.uuid4()),
+                    question=query,
+                    retrieved_sources=minimal_sources,
+                    answer=answer_text,
+                )
+            ],
+            k=k,
+        )
+
+        print(result_output.model_dump_json(indent=2))
+
+    def search_dataset(
+        self,
+        dataset_path: str,
+        save_directory: str,
+        k: int = DOCS_PER_QUERY,
+    ) -> None:
+        """
+        Process multiple questions from a dataset and
+        output search results.
+        """
+        os.makedirs(save_directory, exist_ok=True)
+        filename = Path(dataset_path).name
+
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+            dataset = RagDataset(**raw_data)
+
+        searcher = Searcher()
+        results_list = []
+
+        for q in tqdm(dataset.rag_questions, desc="Searching questions"):
+            raw_results = searcher.search(q.question, k=k)
+
+            minimal_sources = [
+                MinimalSource(
+                    file_path=res["file_path"],
+                    first_character_index=res["first_character_index"],
+                    last_character_index=res["last_character_index"],
+                )
+                for res in raw_results
+            ]
+
+            results_list.append(
+                MinimalSearchResults(
+                    question_id=q.question_id,
+                    question=q.question,
+                    retrieved_sources=minimal_sources,
+                )
+            )
+
+        final_output = StudentSearchResults(search_results=results_list, k=k)
+        output_path = os.path.join(save_directory, filename)
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(final_output.model_dump_json(indent=2))
+
+        print(f"Saved student_search_results to {output_path}")
+
+    def answer_dataset(
+        self,
+        student_search_results_path: str,
+        save_directory: str,
+    ) -> None:
+        """Generate answers from search results."""
+        os.makedirs(save_directory, exist_ok=True)
+        filename = Path(student_search_results_path).name
+
+        with open(student_search_results_path, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+            search_results_data = StudentSearchResults(**raw_data)
+
+        total_q = len(search_results_data.search_results)
+        print(f"Loaded {total_q} questions from {student_search_results_path}")
+
+        pipeline = RAGPipeline()
+        answers_list = []
+
+        for item in tqdm(search_results_data.search_results, desc="Answering"):
+            context_texts = []
+
+            for source in item.retrieved_sources:
+                try:
+                    with open(source.file_path, "r", encoding="utf-8") as f:
+                        f.seek(source.first_character_index)
+                        length = (
+                            source.last_character_index
+                            - source.first_character_index
+                        )
+                        chunk_text = f.read(length)
+                        context_texts.append(chunk_text)
+                except Exception as e:
+                    print(f"Warning: Could not read {source.file_path}: {e}")
+
+            context = "\n\n".join(context_texts)
+
+            prompt = (
+                f"Context:\n{context}\n\n"
+                f"Question:\n{item.question}\n\n"
+                f"Answer:"
+            )
+            answer_text = pipeline.llm.generate(prompt)
+
+            answers_list.append(
+                MinimalAnswer(
+                    question_id=item.question_id,
+                    question=item.question,
+                    retrieved_sources=item.retrieved_sources,
+                    answer=answer_text,
+                )
+            )
+
+        final_output = StudentSearchResultsAndAnswer(
+            search_results=answers_list,
+            k=search_results_data.k,
+        )
+        output_path = os.path.join(save_directory, filename)
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(final_output.model_dump_json(indent=2))
+
+        print(f"Processed {len(answers_list)} of {total_q} questions")
+        print(f"Saved student_search_results_and_answer to {output_path}")
 
 
 def main() -> None:

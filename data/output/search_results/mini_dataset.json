@@ -1,0 +1,173 @@
+{
+  "search_results": [
+    {
+      "question_id": "17526382-7764-4120-b5e8-2d3726b8a4da",
+      "question": "What HTTP endpoint is used to dynamically load a LoRA adapter in vLLM?",
+      "retrieved_sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/lora.md",
+          "first_character_index": 3835,
+          "last_character_index": 5716
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/lora.md",
+          "first_character_index": 5716,
+          "last_character_index": 7658
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/plugins/lora_resolvers/README.md",
+          "first_character_index": 0,
+          "last_character_index": 830
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/lora.md",
+          "first_character_index": 0,
+          "last_character_index": 1884
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/lora.md",
+          "first_character_index": 1884,
+          "last_character_index": 3835
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/lora/resolver.py",
+          "first_character_index": 0,
+          "last_character_index": 1399
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/tests/entrypoints/openai/test_serving_models.py",
+          "first_character_index": 0,
+          "last_character_index": 1998
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/entrypoints/openai/serving_models.py",
+          "first_character_index": 4871,
+          "last_character_index": 6732
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/entrypoints/openai/serving_models.py",
+          "first_character_index": 8725,
+          "last_character_index": 10622
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/lora/request.py",
+          "first_character_index": 227,
+          "last_character_index": 2140
+        }
+      ]
+    },
+    {
+      "question_id": "cc83c230-099f-4c11-aeab-8c09715c5942",
+      "question": "What command can be used to evaluate the accuracy of a quantized model using lm_eval with vLLM?",
+      "retrieved_sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/int8.md",
+          "first_character_index": 3710,
+          "last_character_index": 4628
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/fp8.md",
+          "first_character_index": 1907,
+          "last_character_index": 3792
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/fp8.md",
+          "first_character_index": 3792,
+          "last_character_index": 5619
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/quark.md",
+          "first_character_index": 7116,
+          "last_character_index": 8970
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/.buildkite/lm-eval-harness/run-lm-eval-gsm-vllm-baseline.sh",
+          "first_character_index": 0,
+          "last_character_index": 1363
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/tests/entrypoints/llm/test_accuracy.py",
+          "first_character_index": 0,
+          "last_character_index": 1897
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/int8.md",
+          "first_character_index": 0,
+          "last_character_index": 1873
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/inc.md",
+          "first_character_index": 0,
+          "last_character_index": 1725
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/tests/v1/kv_connector/nixl_integration/test_accuracy.py",
+          "first_character_index": 0,
+          "last_character_index": 1914
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/quantization/int4.md",
+          "first_character_index": 0,
+          "last_character_index": 1905
+        }
+      ]
+    },
+    {
+      "question_id": "5ea5c01a-c953-4477-ae3a-978e20bd73b8",
+      "question": "What method does vLLM's LLM class provide for generating embedding vectors from prompts?",
+      "retrieved_sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/models/pooling_models.md",
+          "first_character_index": 3965,
+          "last_character_index": 5921
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/getting_started/quickstart.md",
+          "first_character_index": 1991,
+          "last_character_index": 3866
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/entrypoints/llm.py",
+          "first_character_index": 3099,
+          "last_character_index": 3543
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/getting_started/quickstart.md",
+          "first_character_index": 3866,
+          "last_character_index": 5141
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/examples/offline_inference/embed_jina_embeddings_v3.py",
+          "first_character_index": 0,
+          "last_character_index": 1741
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/vllm/entrypoints/llm.py",
+          "first_character_index": 52368,
+          "last_character_index": 54259
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/examples/offline_inference/basic/embed.py",
+          "first_character_index": 0,
+          "last_character_index": 1408
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/examples/offline_inference/mlpspeculator.py",
+          "first_character_index": 0,
+          "last_character_index": 1168
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/examples/offline_inference/embed_matryoshka_fy.py",
+          "first_character_index": 0,
+          "last_character_index": 1596
+        },
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/models/generative_models.md",
+          "first_character_index": 1932,
+          "last_character_index": 3916
+        }
+      ]
+    }
+  ],
+  "k": 10
+}

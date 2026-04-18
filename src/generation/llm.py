@@ -10,6 +10,7 @@ from transformers import (
 from transformers.generation.utils import GenerationMixin
 from typing import cast
 from src.constants import DEFAULT_LLM_MODEL
+from transformers import TextStreamer
 
 
 class LLM:
@@ -30,33 +31,51 @@ class LLM:
 
     def generate(self, prompt: str) -> str:
         """Generates a text response using the Qwen model."""
-        inputs: BatchEncoding = self.tokenizer(prompt, return_tensors="pt")
+        inputs = self.tokenizer(prompt, return_tensors="pt")
 
-        outputs: torch.Tensor = self.model.generate(
+        streamer = TextStreamer(self.tokenizer, skip_prompt=True)
+        print("\nQwen is thinking...")
+
+        outputs = self.model.generate(
             **inputs,
             max_new_tokens=500,
             do_sample=False,
             temperature=None,
             top_p=None,
             top_k=None,
-            repetition_penalty=1,
+            repetition_penalty=1.0,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
+            streamer=streamer,
         )
 
+        # Extract generated tokens and decode them into text
         input_length = inputs["input_ids"].shape[1]
         generated_tokens = outputs[0][input_length:]
-
-        response: str = self.tokenizer.decode(
+        response = self.tokenizer.decode(
             generated_tokens, skip_special_tokens=True
         )
 
-        clean_response: str = response.split("```")[0]
-        clean_response = clean_response.split("\n[")[0]
-        clean_response = clean_response.split("\n\n")[0]
+        # Clean-up logic
+        clean_response = response.strip()
 
-        clean_response = clean_response.split("\n**")[0]
-        clean_response = clean_response.split("</")[0]
-        clean_response = clean_response.strip()
+        if "\nQuestion:" in clean_response:
+            clean_response = clean_response.split("\nQuestion:")[0]
+        if "\nContext:" in clean_response:
+            clean_response = clean_response.split("\nContext:")[0]
+        if "\nAnswer:" in clean_response:
+            clean_response = clean_response.split("\nAnswer:")[0]
 
-        return clean_response
+        # Stuttering loop prevention for bash blocks
+        if clean_response.count("```bash") > 1:
+            parts = clean_response.split("```bash")
+            previous_text = parts[0]
+            code_inside = parts[1].split("```")[0]
+            clean_response = (
+                previous_text + "```bash\n" + code_inside.strip() + "\n```"
+            )
+
+        clean_response = clean_response.replace("<|im_end|>", "")
+        clean_response = clean_response.replace("<|endoftext|>", "")
+
+        return clean_response.strip()
