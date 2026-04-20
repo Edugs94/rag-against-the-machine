@@ -1,9 +1,14 @@
-# Logic to build and save the BM25 index
+# Logic to build and save the BM25 and chromadb index
 import bm25s
 import chromadb
 from typing import Any, cast
 from tqdm import tqdm
 from chromadb.utils import embedding_functions
+from chromadb.api.client import ClientAPI
+from chromadb.api.models.Collection import Collection
+from chromadb.utils.embedding_functions import (
+    SentenceTransformerEmbeddingFunction,
+)
 from src.indexing.reader import RepositoryReader
 from src.indexing.chunker import TextChunker
 from src.constants import (
@@ -31,12 +36,18 @@ class IndexBuilder:
         self.reader = RepositoryReader(self.folder_path)
         self.chunker = TextChunker(max_size=max_chunk_size)
 
-        self.chroma_client = chromadb.PersistentClient(path=chroma_path)
-        self.emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=DEFAULT_EMBEDDING_MODEL
+        self.chroma_client: ClientAPI = chromadb.PersistentClient(
+            path=chroma_path
         )
-        self.collection = self.chroma_client.get_or_create_collection(
-            name="vllm_docs", embedding_function=cast(Any, self.emb_fn)
+        self.emb_fn: SentenceTransformerEmbeddingFunction = (
+            embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=DEFAULT_EMBEDDING_MODEL
+            )
+        )
+        self.collection: Collection = (
+            self.chroma_client.get_or_create_collection(
+                name="vllm_docs", embedding_function=cast(Any, self.emb_fn)
+            )
         )
 
     def build(self) -> None:

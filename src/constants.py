@@ -8,19 +8,20 @@ DEFAULT_LLM_MODEL: str = "Qwen/Qwen3-0.6B"
 DEFAULT_CHUNK_SIZE: int = 2000
 DOCS_PER_QUERY: int = 10
 
+CHUNKS_FOR_LLM: int = DOCS_PER_QUERY
+
 RRF_K: int = 60
 CHROMA_DB_BATCH_SIZE = 250
 
+MAX_CHARS_PER_CHUNK: int = 1000
+
 SYSTEM_ROLE: str = (
-    "You are an expert technical assistant for the vLLM library. "
-    "Your objective is to provide accurate and concise answers."
+    "You answer technical questions about the vLLM repository using the "
+    "provided CONTEXT."
 )
 
 SYSTEM_RULES = (
-    "Your ONLY source of truth is the [CONTEXT]. "
-    "Never use outside knowledge. "
-    "Answer the user's question directly in a complete, grammatical"
-    "sentence based ONLY on the text provided. "
-    "If the text does not contain the answer, say 'Context insufficient'. "
-    "No extra formatting."
+    "Answer in 1-2 concise English sentences, using only information "
+    "from the CONTEXT. Do not invent facts. If the CONTEXT does not "
+    "contain the answer, reply exactly: Context insufficient."
 )

@@ -1,7 +1,7 @@
 # Pipeline for a single query
 from src.retrieval.searcher import Searcher
 from src.generation.llm import LLM
-from src.generation.prompts import build_prompt
+from src.generation.prompts import build_messages
 from src.constants import DOCS_PER_QUERY
 
 
@@ -9,7 +9,6 @@ class RAGPipeline:
     """Orchestrates the Retrieval-Augmented Generation flow."""
 
     def __init__(self) -> None:
-        """Initializes the core RAG components."""
         self.searcher = Searcher()
         self.llm = LLM()
 
@@ -19,9 +18,9 @@ class RAGPipeline:
         context = self.searcher.search(query, k)
 
         print("Building the prompt...")
-        prompt = build_prompt(query, context)
+        messages = build_messages(query, context)
 
         print("Generating answer...")
-        response = self.llm.generate(prompt)
+        response = self.llm.generate(messages)
 
         return response

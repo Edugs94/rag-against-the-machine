@@ -1,16 +1,14 @@
 # Connection with transformers and the Qwen3-0.6B model
-import torch
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     PreTrainedTokenizerBase,
     PreTrainedModel,
-    BatchEncoding,
+    TextStreamer,
 )
 from transformers.generation.utils import GenerationMixin
 from typing import cast
 from src.constants import DEFAULT_LLM_MODEL
-from transformers import TextStreamer
 
 
 class LLM:
@@ -29,53 +27,59 @@ class LLM:
         )
         self.model = cast(GenerationMixin, self.raw_model)
 
-    def generate(self, prompt: str) -> str:
-        """Generates a text response using the Qwen model."""
+        self.stop_token_ids = self._resolve_stop_token_ids()
+
+    def _resolve_stop_token_ids(self) -> list[int]:
+        """Returns all token IDs that should halt generation."""
+        ids: set[int] = set()
+        if self.tokenizer.eos_token_id is not None:
+            ids.add(self.tokenizer.eos_token_id)
+        for tok in ("<|im_end|>", "<|endoftext|>"):
+            tid = self.tokenizer.convert_tokens_to_ids(tok)
+            if isinstance(tid, int) and tid != self.tokenizer.unk_token_id:
+                ids.add(tid)
+        return list(ids)
+
+    def generate(self, messages: list[dict]) -> str:
+        """Generates a text response using Qwen's chat template."""
+        prompt = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,  # Extractive task: no reasoning needed
+        )
+
+        prompt = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
+
         inputs = self.tokenizer(prompt, return_tensors="pt")
 
-        streamer = TextStreamer(self.tokenizer, skip_prompt=True)
+        streamer = TextStreamer(
+            self.tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
         print("\nQwen is thinking...")
 
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=500,
+            max_new_tokens=128,
             do_sample=False,
             temperature=None,
             top_p=None,
             top_k=None,
             repetition_penalty=1.0,
-            eos_token_id=self.tokenizer.eos_token_id,
+            eos_token_id=self.stop_token_ids,
             pad_token_id=self.tokenizer.eos_token_id,
             streamer=streamer,
         )
 
-        # Extract generated tokens and decode them into text
         input_length = inputs["input_ids"].shape[1]
         generated_tokens = outputs[0][input_length:]
         response = self.tokenizer.decode(
             generated_tokens, skip_special_tokens=True
         )
 
-        # Clean-up logic
-        clean_response = response.strip()
-
-        if "\nQuestion:" in clean_response:
-            clean_response = clean_response.split("\nQuestion:")[0]
-        if "\nContext:" in clean_response:
-            clean_response = clean_response.split("\nContext:")[0]
-        if "\nAnswer:" in clean_response:
-            clean_response = clean_response.split("\nAnswer:")[0]
-
-        # Stuttering loop prevention for bash blocks
-        if clean_response.count("```bash") > 1:
-            parts = clean_response.split("```bash")
-            previous_text = parts[0]
-            code_inside = parts[1].split("```")[0]
-            clean_response = (
-                previous_text + "```bash\n" + code_inside.strip() + "\n```"
-            )
-
-        clean_response = clean_response.replace("<|im_end|>", "")
-        clean_response = clean_response.replace("<|endoftext|>", "")
-
-        return clean_response.strip()
+        return response.strip()

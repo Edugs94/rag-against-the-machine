@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 from tqdm import tqdm
 
+from src.generation.prompts import build_messages
 from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
 from src.pipeline import RAGPipeline
@@ -77,17 +78,10 @@ class RAGCli:
     def answer(self, query: str, k: int = DOCS_PER_QUERY):
         """Answer a single query using retrieved context."""
         pipeline = RAGPipeline()
+
+        answer_text = pipeline.answer(query, k=k)
+
         raw_results = pipeline.searcher.search(query, k=k)
-
-        context_texts = [res["text"] for res in raw_results]
-        context = "\n\n".join(context_texts)
-
-        prompt = (
-            f"Context:\n{context}\n\n" f"Question:\n{query}\n\n" f"Answer:"
-        )
-
-        answer_text = pipeline.llm.generate(prompt)
-
         minimal_sources = [
             MinimalSource(
                 file_path=res["file_path"],
@@ -161,26 +155,25 @@ class RAGCli:
 
     def answer_dataset(
         self,
-        student_search_results_path: str,
+        search_results_path: str,
         save_directory: str,
     ) -> None:
         """Generate answers from search results."""
         os.makedirs(save_directory, exist_ok=True)
-        filename = Path(student_search_results_path).name
+        filename = Path(search_results_path).name
 
-        with open(student_search_results_path, "r", encoding="utf-8") as f:
+        with open(search_results_path, "r", encoding="utf-8") as f:
             raw_data = json.load(f)
             search_results_data = StudentSearchResults(**raw_data)
 
         total_q = len(search_results_data.search_results)
-        print(f"Loaded {total_q} questions from {student_search_results_path}")
+        print(f"Loaded {total_q} questions from {search_results_path}")
 
         pipeline = RAGPipeline()
         answers_list = []
 
         for item in tqdm(search_results_data.search_results, desc="Answering"):
-            context_texts = []
-
+            chunks = []
             for source in item.retrieved_sources:
                 try:
                     with open(source.file_path, "r", encoding="utf-8") as f:
@@ -190,18 +183,14 @@ class RAGCli:
                             - source.first_character_index
                         )
                         chunk_text = f.read(length)
-                        context_texts.append(chunk_text)
+                        chunks.append(
+                            {"file_path": source.file_path, "text": chunk_text}
+                        )
                 except Exception as e:
                     print(f"Warning: Could not read {source.file_path}: {e}")
 
-            context = "\n\n".join(context_texts)
-
-            prompt = (
-                f"Context:\n{context}\n\n"
-                f"Question:\n{item.question}\n\n"
-                f"Answer:"
-            )
-            answer_text = pipeline.llm.generate(prompt)
+            messages = build_messages(item.question, chunks)
+            answer_text = pipeline.llm.generate(messages)
 
             answers_list.append(
                 MinimalAnswer(
@@ -223,6 +212,51 @@ class RAGCli:
 
         print(f"Processed {len(answers_list)} of {total_q} questions")
         print(f"Saved student_search_results_and_answer to {output_path}")
+
+    def evaluate(
+        self,
+        search_results_path: str,
+        dataset_path: str,
+    ) -> None:
+        """Evaluate retrieval quality at k=1, 3, 5, 10 against ground truth."""
+        from src.evaluation.metrics import recall_at_k
+
+        with open(search_results_path, "r", encoding="utf-8") as f:
+            raw_student = json.load(f)
+            student_data = StudentSearchResults(**raw_student)
+
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            raw_dataset = json.load(f)
+            dataset = RagDataset(**raw_dataset)
+
+        answered = [q for q in dataset.rag_questions if hasattr(q, "sources")]
+
+        total = len(dataset.rag_questions)
+        n_answered = len(answered)
+        n_with_results = sum(
+            1
+            for q in answered
+            if any(
+                r.question_id == q.question_id
+                for r in student_data.search_results
+            )
+        )
+
+        print("Student data is valid: True")
+        print(f"Total number of questions: {total}")
+        print(f"Total number of questions with sources: {n_answered}")
+        print(
+            f"Total number of questions with "
+            f"student sources: {n_with_results}"
+        )
+        print()
+        print("Evaluation Results")
+        print("=" * 40)
+        print(f"Questions evaluated: {n_answered}")
+
+        for k in (1, 3, 5, 10):
+            score = recall_at_k(answered, student_data.search_results, k)
+            print(f"Recall@{k}: {score:.3f}")
 
 
 def main() -> None:
