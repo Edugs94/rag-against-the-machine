@@ -4,7 +4,8 @@ CHROMA_DB_PATH: str = "data/processed/chroma_db"
 DEFAULT_EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
 
 DEFAULT_LLM_MODEL: str = "Qwen/Qwen3-0.6B"
-
+RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+RERANKER_CANDIDATES: int = 30
 DEFAULT_CHUNK_SIZE: int = 2000
 DOCS_PER_QUERY: int = 10
 
