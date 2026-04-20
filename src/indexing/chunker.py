@@ -19,38 +19,37 @@ class TextChunker:
             seps = ["\nclass ", "\ndef ", "\n\n", "\n", " "]
         elif file_path.endswith((".cpp", ".cu", ".cuh", ".h", ".hpp")):
             seps = ["}\n", ";\n", "\n\n", "\n", " "]
+        elif file_path.endswith((".md", ".mdx")):
+            seps = ["\n# ", "\n## ", "\n### ", "\n#### ",
+                    "\n```", "\n\n", "\n", " "]
         else:
             seps = ["\n\n", "\n", " "]
-
         yield from self._chunk_with_separators(file_path, text, seps)
 
     def _chunk_with_separators(
         self, file_path: str, text: str, separators: list[str]
     ) -> Iterator[dict[str, Any]]:
         """Create chunks using prioritized separators."""
+        header_seps = {"\nclass ", "\ndef ", "\n# ", "\n## ",
+                       "\n### ", "\n#### "}
         start = 0
         text_len = len(text)
-
         while start < text_len:
             end = min(start + self.max_size, text_len)
-
             if end == text_len:
                 yield self._format_chunk(file_path, text, start, end)
                 break
-
             split_idx = -1
             for sep in separators:
                 found_idx = text.rfind(sep, start, end)
                 if found_idx != -1:
-                    if sep in ("\nclass ", "\ndef "):
+                    if sep in header_seps:
                         split_idx = found_idx + 1
                     else:
                         split_idx = found_idx + len(sep)
                     break
-
             if split_idx == -1:
                 split_idx = end
-
             yield self._format_chunk(file_path, text, start, split_idx)
             start = split_idx
 
