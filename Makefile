@@ -2,7 +2,8 @@ MODULE = src
 VENV = .venv
 VENV_FILE = $(VENV)/.pyinstall.timestamp
 UV_FILES = pyproject.toml uv.lock
-UV_RUN = uv run python
+UV_RUN = uv run python3
+ARGS ?= index --repo_path="data/raw"
 
 all: install run
 
@@ -15,11 +16,11 @@ $(VENV_FILE): $(UV_FILES)
 
 run: install
 	@echo "Running..."
-	$(UV_RUN) -m $(MODULE)
+	$(UV_RUN) -m $(MODULE) $(ARGS)
 
 debug: install
 	@echo "Debugging..."
-	$(UV_RUN) -m pdb -m $(MODULE)
+	$(UV_RUN) -m pdb -m $(MODULE) $(ARGS)
 
 lint: install
 	@echo "Linting..."

@@ -32,8 +32,23 @@ class Searcher:
             name="vllm_docs", embedding_function=cast(Any, self.emb_fn)
         )
         self.reranker = CrossEncoder(RERANKER_MODEL)
+        self._cache: dict[tuple[str, int], list[dict[str, Any]]] = {}
 
     def search(
+        self, query: str, k: int = DOCS_PER_QUERY
+    ) -> list[dict[str, Any]]:
+        """
+        Cached entry point. Returns the top-k chunks for a given query,
+        falling back to the full hybrid pipeline on cache miss.
+        """
+        key = (query, k)
+        if key in self._cache:
+            return self._cache[key]
+        result = self._do_search(query, k)
+        self._cache[key] = result
+        return result
+
+    def _do_search(
         self, query: str, k: int = DOCS_PER_QUERY
     ) -> list[dict[str, Any]]:
         """

@@ -7,6 +7,7 @@ DEFAULT_LLM_MODEL: str = "Qwen/Qwen3-0.6B"
 RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 RERANKER_CANDIDATES: int = 30
 DEFAULT_CHUNK_SIZE: int = 2000
+DEFAULT_CHUNK_OVERLAP: int = 150
 DOCS_PER_QUERY: int = 10
 
 CHUNKS_FOR_LLM: int = DOCS_PER_QUERY
@@ -26,3 +27,5 @@ SYSTEM_RULES = (
     "from the CONTEXT. Do not invent facts. If the CONTEXT does not "
     "contain the answer, reply exactly: Context insufficient."
 )
+
+CACHE_PATH: str = "data/processed/diskcache"

@@ -46,13 +46,6 @@ class LLM:
             messages,
             tokenize=False,
             add_generation_prompt=True,
-            enable_thinking=False,  # Extractive task: no reasoning needed
-        )
-
-        prompt = self.tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
             enable_thinking=False,
         )
 

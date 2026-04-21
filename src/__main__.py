@@ -66,7 +66,7 @@ class RAGCli:
             search_results=[
                 MinimalSearchResults(
                     question_id=str(uuid.uuid4()),
-                    question=query,
+                    question_str=query,
                     retrieved_sources=minimal_sources,
                 )
             ],
@@ -95,7 +95,7 @@ class RAGCli:
             search_results=[
                 MinimalAnswer(
                     question_id=str(uuid.uuid4()),
-                    question=query,
+                    question_str=query,
                     retrieved_sources=minimal_sources,
                     answer=answer_text,
                 )
@@ -140,7 +140,7 @@ class RAGCli:
             results_list.append(
                 MinimalSearchResults(
                     question_id=q.question_id,
-                    question=q.question,
+                    question_str=q.question,
                     retrieved_sources=minimal_sources,
                 )
             )
@@ -195,7 +195,7 @@ class RAGCli:
             answers_list.append(
                 MinimalAnswer(
                     question_id=item.question_id,
-                    question=item.question,
+                    question_str=item.question,
                     retrieved_sources=item.retrieved_sources,
                     answer=answer_text,
                 )

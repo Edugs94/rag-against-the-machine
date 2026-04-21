@@ -1,4 +1,5 @@
 resources/
 data/processed/
 __pycache__/
-__pycache__/
+moulinette/
+data/output

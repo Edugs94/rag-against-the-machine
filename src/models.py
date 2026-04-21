@@ -1,5 +1,4 @@
-# Data Layer: Your Pydantic classes
-
+# Data Layer: Pydantic classes
 import uuid
 from pydantic import BaseModel, Field
 
@@ -36,7 +35,7 @@ class MinimalSearchResults(BaseModel):
     """Represents the search results for a specific query."""
 
     question_id: str
-    question: str
+    question_str: str
     retrieved_sources: list[MinimalSource]
 
 

@@ -1,5 +1,4 @@
 # Recall@k calculation logic
-# Recall@k implementation for the RAG retrieval component.
 from src.models import (
     MinimalSource,
     AnsweredQuestion,
@@ -8,8 +7,8 @@ from src.models import (
 
 
 def _overlap_length(a: MinimalSource, b: MinimalSource) -> int:
-    """Number of characters overlapping between two sources of the same file.
-
+    """
+    Number of characters overlapping between two sources of the same file.
     Returns 0 if the files differ or if the intervals don't overlap.
     """
     if a.file_path != b.file_path:
