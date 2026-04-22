@@ -37,3 +37,14 @@ def write_model_as_json(path: str, payload: BaseModel, label: str) -> None:
     except OSError as e:
         print(f"Failed to write {label} ({path}): {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def sanitize_query(query: object) -> str:
+    """
+    Coerce Fire inputs to str and validate the query is non-empty
+    """
+    text = str(query).strip()
+    if not text:
+        print("Query cannot be empty", file=sys.stderr)
+        sys.exit(1)
+    return text

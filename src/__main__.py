@@ -9,7 +9,7 @@ from src.generation.prompts import build_messages
 from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
 from src.pipeline import RAGPipeline
-from src.utils import load_json_as_model, write_model_as_json
+from src.utils import load_json_as_model, write_model_as_json, sanitize_query
 from src.constants import (
     BM25_PATH,
     CHROMA_DB_PATH,
@@ -26,7 +26,7 @@ from src.models import (
     StudentSearchResultsAndAnswer,
     RagDataset,
 )
-
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
 def _load_searcher() -> Searcher:
     """Load the search index with a clear error if it's missing."""
@@ -101,6 +101,7 @@ class RAGCli:
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
+        query = sanitize_query(query)
         searcher = _load_searcher()
 
         raw_results = searcher.search(query, k=k)
@@ -132,6 +133,7 @@ class RAGCli:
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
+        query = sanitize_query(query)
         pipeline = _load_pipeline()
 
         raw_results = pipeline.searcher.search(query, k=k)
@@ -284,6 +286,7 @@ class RAGCli:
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
+        query = sanitize_query(query)
         pipeline = _load_pipeline()
         pipeline.answer_streaming(query, k=k)
 
