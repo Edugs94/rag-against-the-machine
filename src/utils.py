@@ -1,4 +1,5 @@
 """Utility helpers for the CLI: I/O + pydantic validation with clear errors."""
+import os
 import sys
 import json
 from typing import TypeVar
@@ -48,3 +49,15 @@ def sanitize_query(query: object) -> str:
         print("Query cannot be empty", file=sys.stderr)
         sys.exit(1)
     return text
+
+
+def ensure_directory(path: str) -> None:
+    """Create a directory if it doesn't exist, with clear errors."""
+    try:
+        os.makedirs(path, exist_ok=True)
+    except PermissionError:
+        print(f"Permission denied creating: {path}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as e:
+        print(f"Failed to create directory {path}: {e}", file=sys.stderr)
+        sys.exit(1)

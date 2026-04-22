@@ -1,16 +1,18 @@
 import os
-import sys
-import uuid
-import fire
-from pathlib import Path
-from tqdm import tqdm
-from src.models import AnsweredQuestion
-from src.generation.prompts import build_messages
-from src.indexing.builder import IndexBuilder
-from src.retrieval.searcher import Searcher
-from src.pipeline import RAGPipeline
-from src.utils import load_json_as_model, write_model_as_json, sanitize_query
-from src.constants import (
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+import sys  # noqa: E402: E402
+import uuid  # noqa: E402: E402
+import fire  # noqa: E402
+from pathlib import Path  # noqa: E402
+from tqdm import tqdm  # noqa: E402
+from src.models import AnsweredQuestion  # noqa: E402
+from src.generation.prompts import build_messages  # noqa: E402
+from src.indexing.builder import IndexBuilder  # noqa: E402
+from src.retrieval.searcher import Searcher  # noqa: E402
+from src.pipeline import RAGPipeline  # noqa: E402
+from src.utils import (load_json_as_model, write_model_as_json,  # noqa: E402
+                       sanitize_query, ensure_directory)
+from src.constants import (  # noqa: E402
     BM25_PATH,
     CHROMA_DB_PATH,
     DEFAULT_CHUNK_SIZE,
@@ -18,7 +20,7 @@ from src.constants import (
     DEFAULT_REPO_PATH,
     MIN_CHUNK_SIZE,
 )
-from src.models import (
+from src.models import (  # noqa: E402
     MinimalSource,
     MinimalSearchResults,
     StudentSearchResults,
@@ -26,7 +28,7 @@ from src.models import (
     StudentSearchResultsAndAnswer,
     RagDataset,
 )
-os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
 
 def _load_searcher() -> Searcher:
     """Load the search index with a clear error if it's missing."""
@@ -70,7 +72,8 @@ class RAGCli:
     ) -> None:
         """Index the repository and save BM25 and Chroma models."""
         if max_chunk_size <= MIN_CHUNK_SIZE:
-            print("Chunk size must be greater than 149", file=sys.stderr)
+            print(f"Chunk size must be greater than {max_chunk_size}",
+                  file=sys.stderr)
             sys.exit(1)
         index_builder = IndexBuilder(
             folder_path=repo_path,
@@ -173,7 +176,7 @@ class RAGCli:
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
-        os.makedirs(save_directory, exist_ok=True)
+        ensure_directory(save_directory)
         filename = Path(dataset_path).name
 
         dataset = load_json_as_model(dataset_path, RagDataset, "Dataset")
@@ -213,7 +216,7 @@ class RAGCli:
         save_directory: str,
     ) -> None:
         """Generate answers from search results."""
-        os.makedirs(save_directory, exist_ok=True)
+        ensure_directory(save_directory)
         filename = Path(search_results_path).name
 
         search_results_data = load_json_as_model(
@@ -318,7 +321,6 @@ class RAGCli:
             )
         )
 
-        print("Student data is valid: True")
         print(f"Total number of questions: {total}")
         print(f"Total number of questions with sources: {n_answered}")
         print(

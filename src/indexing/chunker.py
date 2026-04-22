@@ -1,4 +1,4 @@
-# Logic to split Python and Markdown files
+'''Logic to split Python and Markdown files'''
 from collections.abc import Iterator
 from typing import Any
 from langchain_text_splitters import (
@@ -58,7 +58,7 @@ class TextChunker:
         """
         try:
             sections = self._md_header_splitter.split_text(text)
-        except Exception:
+        except (ValueError, TypeError, IndexError, AttributeError):
             seps = ["\n# ", "\n## ", "\n### ", "\n#### ",
                     "\n```", "\n\n", "\n", " "]
             yield from self._chunk_with_separators(file_path, text, seps)

@@ -1,4 +1,4 @@
-# Logic to build and save the BM25 and chromadb index
+'''Logic to build and save the BM25 and chromadb index'''
 import bm25s
 import chromadb
 from typing import Any, cast
@@ -97,4 +97,10 @@ class IndexBuilder:
                 documents=chroma_texts[i:end_idx],
                 metadatas=cast(Any, chroma_metadatas[i:end_idx]),
                 ids=chroma_ids[i:end_idx],
+            )
+
+        if not bm25_corpus:
+            raise RuntimeError(
+                f"No indexable files found in {self.folder_path}. "
+                f"Check the path and supported extensions."
             )
