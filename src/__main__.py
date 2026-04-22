@@ -86,6 +86,9 @@ class RAGCli:
         except FileNotFoundError:
             print(f"Repository not found: {repo_path}", file=sys.stderr)
             sys.exit(1)
+        except RuntimeError as e:
+            print(f"Indexing failed: {e}", file=sys.stderr)
+            sys.exit(1)
         except PermissionError as e:
             print(
                 f"Permission denied while building index: {e}",
