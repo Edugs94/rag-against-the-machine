@@ -77,6 +77,12 @@ class IndexBuilder:
                 )
                 chroma_ids.append(chunk_id)
 
+        if not bm25_corpus:
+            raise RuntimeError(
+                f"No indexable files found in {self.folder_path}. "
+                f"Check the path and supported extensions."
+            )
+
         # Save Lexical Index (BM25)
         tokens = bm25s.tokenize(texts_for_bm25)
         indexer = bm25s.BM25()
@@ -97,10 +103,4 @@ class IndexBuilder:
                 documents=chroma_texts[i:end_idx],
                 metadatas=cast(Any, chroma_metadatas[i:end_idx]),
                 ids=chroma_ids[i:end_idx],
-            )
-
-        if not bm25_corpus:
-            raise RuntimeError(
-                f"No indexable files found in {self.folder_path}. "
-                f"Check the path and supported extensions."
             )
