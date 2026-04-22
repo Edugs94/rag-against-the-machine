@@ -54,7 +54,7 @@ class LLM:
         streamer = TextStreamer(
             self.tokenizer, skip_prompt=True, skip_special_tokens=True
         )
-        
+
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=128,
