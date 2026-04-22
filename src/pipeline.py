@@ -12,7 +12,7 @@ class RAGPipeline:
         self.searcher = Searcher()
         self.llm = LLM()
 
-    def answer(self, query: str, k=CHUNKS_PER_QUERY) -> str:
+    def answer(self, query: str, k: int = CHUNKS_PER_QUERY) -> str:
         """Executes the full RAG pipeline for a given query."""
         print("Searching for context...")
         context = self.searcher.search(query, k)

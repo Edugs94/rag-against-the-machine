@@ -5,6 +5,7 @@ import fire
 import uuid
 from pathlib import Path
 from tqdm import tqdm
+from src.models import AnsweredQuestion
 from src.generation.prompts import build_messages
 from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
@@ -48,7 +49,7 @@ class RAGCli:
         index_builder.build()
         print(f"Ingestion complete! Indices saved under {repo_path}")
 
-    def search(self, query: str, k: int = CHUNKS_PER_QUERY):
+    def search(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
         """
         Search for a single query and return results in Pydantic JSON format.
         """
@@ -81,7 +82,7 @@ class RAGCli:
 
         print(result_output.model_dump_json(indent=2))
 
-    def answer(self, query: str, k: int = CHUNKS_PER_QUERY):
+    def answer(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
         """Answer a single query using retrieved context."""
         if k <= 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
@@ -265,7 +266,9 @@ class RAGCli:
             print("System error", file=sys.stderr)
             sys.exit(1)
 
-        answered = [q for q in dataset.rag_questions if hasattr(q, "sources")]
+        answered = [
+            q for q in dataset.rag_questions if isinstance(q, AnsweredQuestion)
+        ]
 
         total = len(dataset.rag_questions)
         n_answered = len(answered)

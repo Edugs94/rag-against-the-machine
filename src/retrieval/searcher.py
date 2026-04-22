@@ -70,7 +70,7 @@ class Searcher:
         query_tokens = bm25s.tokenize(query)
         k_val = min(k, len(self.retriever.corpus))
         results, _ = self.retriever.retrieve(query_tokens, k=k_val)
-        return results[0].tolist()
+        return cast(list[dict[str, Any]], results[0].tolist())
 
     def _chromadb_search(self, query: str, k: int) -> list[dict[str, Any]]:
         """Retrieve top documents using ChromaDB."""

@@ -55,4 +55,4 @@ class StudentSearchResults(BaseModel):
 class StudentSearchResultsAndAnswer(StudentSearchResults):
     """Represents search results including generated answers."""
 
-    search_results: list[MinimalAnswer]
+    search_results: list[MinimalAnswer]  # type: ignore

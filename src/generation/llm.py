@@ -55,7 +55,7 @@ class LLM:
             self.tokenizer, skip_prompt=True, skip_special_tokens=True
         )
 
-        outputs = self.model.generate(
+        outputs = self.model.generate(  # type: ignore[misc]
             **inputs,
             max_new_tokens=128,
             do_sample=False,
@@ -70,8 +70,8 @@ class LLM:
 
         input_length = inputs["input_ids"].shape[1]
         generated_tokens = outputs[0][input_length:]
-        response = self.tokenizer.decode(
+        response = cast(str, self.tokenizer.decode(
             generated_tokens, skip_special_tokens=True
-        )
+        ))
 
         return response.strip()
