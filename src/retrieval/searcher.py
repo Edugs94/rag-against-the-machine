@@ -7,7 +7,7 @@ from src.constants import (
     BM25_PATH,
     CHROMA_DB_PATH,
     DEFAULT_EMBEDDING_MODEL,
-    DOCS_PER_QUERY,
+    CHUNKS_PER_QUERY,
     RRF_K,
     RERANKER_MODEL,
     RERANKER_CANDIDATES,
@@ -35,7 +35,7 @@ class Searcher:
         self._cache: dict[tuple[str, int], list[dict[str, Any]]] = {}
 
     def search(
-        self, query: str, k: int = DOCS_PER_QUERY
+        self, query: str, k: int = CHUNKS_PER_QUERY
     ) -> list[dict[str, Any]]:
         """
         Cached entry point. Returns the top-k chunks for a given query,
@@ -49,7 +49,7 @@ class Searcher:
         return result
 
     def _do_search(
-        self, query: str, k: int = DOCS_PER_QUERY
+        self, query: str, k: int = CHUNKS_PER_QUERY
     ) -> list[dict[str, Any]]:
         """
         Execute hybrid search with RRF fusion and cross-encoder reranking.

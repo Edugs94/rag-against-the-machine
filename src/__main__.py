@@ -13,7 +13,7 @@ from src.constants import (
     BM25_PATH,
     CHROMA_DB_PATH,
     DEFAULT_CHUNK_SIZE,
-    DOCS_PER_QUERY,
+    CHUNKS_PER_QUERY,
 )
 from src.models import (
     MinimalSource,
@@ -48,7 +48,7 @@ class RAGCli:
         index_builder.build()
         print(f"Ingestion complete! Indices saved under {repo_path}")
 
-    def search(self, query: str, k: int = DOCS_PER_QUERY):
+    def search(self, query: str, k: int = CHUNKS_PER_QUERY):
         """
         Search for a single query and return results in Pydantic JSON format.
         """
@@ -81,7 +81,7 @@ class RAGCli:
 
         print(result_output.model_dump_json(indent=2))
 
-    def answer(self, query: str, k: int = DOCS_PER_QUERY):
+    def answer(self, query: str, k: int = CHUNKS_PER_QUERY):
         """Answer a single query using retrieved context."""
         if k <= 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
@@ -118,7 +118,7 @@ class RAGCli:
         self,
         dataset_path: str,
         save_directory: str,
-        k: int = DOCS_PER_QUERY,
+        k: int = CHUNKS_PER_QUERY,
     ) -> None:
         """
         Process multiple questions from a dataset and

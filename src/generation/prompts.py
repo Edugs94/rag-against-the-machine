@@ -3,26 +3,21 @@ from src.constants import (
     SYSTEM_ROLE,
     SYSTEM_RULES,
     CHUNKS_FOR_LLM,
-    MAX_CHARS_PER_CHUNK,
 )
 
 
-def _truncate(text: str, max_chars: int) -> str:
-    """Truncates a chunk to max_chars, cutting on the last whitespace."""
-    if len(text) <= max_chars:
-        return text
-    cut = text[:max_chars].rsplit(" ", 1)[0]
-    return cut + " [...]"
-
-
 def build_messages(query: str, chunks: list[dict]) -> list[dict]:
+    """
+    Builds the messages for the LLM using the full retrieved context.
+    """
     selected = chunks[:CHUNKS_FOR_LLM]
 
-    context = "\n\n---\n\n".join(
-        f"[Source: {c['file_path']}]\n"
-        f"{_truncate(c['text'], MAX_CHARS_PER_CHUNK)}"
-        for c in selected
-    )
+    context_parts = []
+    for c in selected:
+        header = f"[Source: {c['file_path']}]"
+        context_parts.append(f"{header}\n{c['text']}")
+
+    context = "\n\n---\n\n".join(context_parts)
 
     system_content = f"{SYSTEM_ROLE}\n\n{SYSTEM_RULES}"
     user_content = f"CONTEXT:\n{context}\n\nQUESTION:\n{query}"

@@ -141,7 +141,7 @@ All constants live in `src/constants.py`.
 | `RERANKER_MODEL`           | `cross-encoder/ms-marco-MiniLM-L-6-v2`   |
 | `DEFAULT_CHUNK_SIZE`       | 2000                                     |
 | `DEFAULT_CHUNK_OVERLAP`    | 150                                      |
-| `DOCS_PER_QUERY`           | 10                                       |
+| `CHUNKS_PER_QUERY`           | 10                                       |
 | `RERANKER_CANDIDATES`      | 30                                       |
 | `RRF_K`                    | 60                                       |
 | `CHUNKS_FOR_LLM`           | 10                                       |
