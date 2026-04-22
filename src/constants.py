@@ -3,6 +3,7 @@
 BM25_PATH: str = "data/processed/bm25_index"
 CHROMA_DB_PATH: str = "data/processed/chroma_db"
 CACHE_PATH: str = "data/processed/diskcache"
+DEFAULT_REPO_PATH: str = "data/raw/vllm-0.10.1"
 
 # ---------- MODELS ----------
 
@@ -26,6 +27,7 @@ SYSTEM_RULES = (
 # ------- DEFAULT VALUES -------
 
 DEFAULT_CHUNK_SIZE: int = 2000
+MIN_CHUNK_SIZE: int = 150
 DEFAULT_CHUNK_OVERLAP: int = 150
 
 CHUNKS_PER_QUERY: int = 10

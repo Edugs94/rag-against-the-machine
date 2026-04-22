@@ -1,8 +1,7 @@
 import os
 import sys
-import json
-import fire
 import uuid
+import fire
 from pathlib import Path
 from tqdm import tqdm
 from src.models import AnsweredQuestion
@@ -10,11 +9,14 @@ from src.generation.prompts import build_messages
 from src.indexing.builder import IndexBuilder
 from src.retrieval.searcher import Searcher
 from src.pipeline import RAGPipeline
+from src.utils import load_json_as_model, write_model_as_json
 from src.constants import (
     BM25_PATH,
     CHROMA_DB_PATH,
     DEFAULT_CHUNK_SIZE,
     CHUNKS_PER_QUERY,
+    DEFAULT_REPO_PATH,
+    MIN_CHUNK_SIZE,
 )
 from src.models import (
     MinimalSource,
@@ -26,18 +28,48 @@ from src.models import (
 )
 
 
+def _load_searcher() -> Searcher:
+    """Load the search index with a clear error if it's missing."""
+    try:
+        return Searcher()
+    except FileNotFoundError:
+        print(
+            "Index not found. Run `python -m src index` first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except OSError as e:
+        print(f"Failed to load search index: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _load_pipeline() -> RAGPipeline:
+    """Load the full RAG pipeline with a clear error on failure."""
+    try:
+        return RAGPipeline()
+    except FileNotFoundError:
+        print(
+            "Index not found. Run `python -m src index` first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except RuntimeError as e:
+        print(f"Failed to initialize pipeline: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 class RAGCli:
     """Main CLI"""
 
     def index(
         self,
-        repo_path: str,
+        repo_path: str = DEFAULT_REPO_PATH,
         bm25_save_path: str = BM25_PATH,
         chroma_path: str = CHROMA_DB_PATH,
         max_chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
         """Index the repository and save BM25 and Chroma models."""
-        if max_chunk_size <= 150:
+        if max_chunk_size <= MIN_CHUNK_SIZE:
             print("Chunk size must be greater than 149", file=sys.stderr)
             sys.exit(1)
         index_builder = IndexBuilder(
@@ -46,17 +78,30 @@ class RAGCli:
             chroma_path=chroma_path,
             max_chunk_size=max_chunk_size,
         )
-        index_builder.build()
-        print(f"Ingestion complete! Indices saved under {repo_path}")
+        try:
+            index_builder.build()
+        except FileNotFoundError:
+            print(f"Repository not found: {repo_path}", file=sys.stderr)
+            sys.exit(1)
+        except PermissionError as e:
+            print(
+                f"Permission denied while building index: {e}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        except OSError as e:
+            print(f"I/O error while building index: {e}", file=sys.stderr)
+            sys.exit(1)
+        print("Ingestion complete!")
+        print(f"BM25 Indices saved under {bm25_save_path}")
+        print(f"Chromadb vectorized database saved under {chroma_path}")
 
     def search(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
-        """
-        Search for a single query and return results in Pydantic JSON format.
-        """
-        if k <= 1:
+        """Search for a single query and return results as Pydantic JSON."""
+        if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
-        searcher = Searcher()
+        searcher = _load_searcher()
 
         raw_results = searcher.search(query, k=k)
 
@@ -84,14 +129,15 @@ class RAGCli:
 
     def answer(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
         """Answer a single query using retrieved context."""
-        if k <= 1:
+        if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
-        pipeline = RAGPipeline()
-
-        answer_text = pipeline.answer(query, k=k)
+        pipeline = _load_pipeline()
 
         raw_results = pipeline.searcher.search(query, k=k)
+        messages = build_messages(query, raw_results)
+        answer_text = pipeline.llm.generate(messages)
+
         minimal_sources = [
             MinimalSource(
                 file_path=res["file_path"],
@@ -121,24 +167,16 @@ class RAGCli:
         save_directory: str,
         k: int = CHUNKS_PER_QUERY,
     ) -> None:
-        """
-        Process multiple questions from a dataset and
-        output search results.
-        """
-        if k <= 1:
+        """Process questions from a dataset and output search results."""
+        if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
         os.makedirs(save_directory, exist_ok=True)
         filename = Path(dataset_path).name
-        try:
-            with open(dataset_path, "r", encoding="utf-8") as f:
-                raw_data = json.load(f)
-                dataset = RagDataset(**raw_data)
-        except Exception:
-            print("System error", file=sys.stderr)
-            sys.exit(1)
 
-        searcher = Searcher()
+        dataset = load_json_as_model(dataset_path, RagDataset, "Dataset")
+
+        searcher = _load_searcher()
         results_list = []
 
         for q in tqdm(dataset.rag_questions, desc="Searching questions"):
@@ -163,12 +201,7 @@ class RAGCli:
 
         final_output = StudentSearchResults(search_results=results_list, k=k)
         output_path = os.path.join(save_directory, filename)
-        try:
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(final_output.model_dump_json(indent=2))
-        except Exception:
-            print("System error", file=sys.stderr)
-            sys.exit(1)
+        write_model_as_json(output_path, final_output, "search results")
 
         print(f"Saved student_search_results to {output_path}")
 
@@ -181,20 +214,14 @@ class RAGCli:
         os.makedirs(save_directory, exist_ok=True)
         filename = Path(search_results_path).name
 
-        try:
-
-            with open(search_results_path, "r", encoding="utf-8") as f:
-                raw_data = json.load(f)
-                search_results_data = StudentSearchResults(**raw_data)
-
-        except Exception:
-            print("System error", file=sys.stderr)
-            sys.exit(1)
+        search_results_data = load_json_as_model(
+            search_results_path, StudentSearchResults, "Search results"
+        )
 
         total_q = len(search_results_data.search_results)
         print(f"Loaded {total_q} questions from {search_results_path}")
 
-        pipeline = RAGPipeline()
+        pipeline = _load_pipeline()
         answers_list = []
 
         for item in tqdm(search_results_data.search_results, desc="Answering"):
@@ -202,17 +229,31 @@ class RAGCli:
             for source in item.retrieved_sources:
                 try:
                     with open(source.file_path, "r", encoding="utf-8") as f:
-                        f.seek(source.first_character_index)
-                        length = (
-                            source.last_character_index
-                            - source.first_character_index
-                        )
-                        chunk_text = f.read(length)
-                        chunks.append(
-                            {"file_path": source.file_path, "text": chunk_text}
-                        )
-                except Exception as e:
-                    print(f"Warning: Could not read {source.file_path}: {e}")
+                        full_text = f.read()
+                    chunk_text = full_text[
+                        source.first_character_index:source.
+                        last_character_index
+                    ]
+                    chunks.append(
+                        {"file_path": source.file_path, "text": chunk_text}
+                    )
+                except FileNotFoundError:
+                    print(
+                        f"Warning: source file not found, skipping: "
+                        f"{source.file_path}",
+                        file=sys.stderr,
+                    )
+                except UnicodeDecodeError:
+                    print(
+                        f"Warning: non-UTF8 file, skipping: "
+                        f"{source.file_path}",
+                        file=sys.stderr,
+                    )
+                except OSError as e:
+                    print(
+                        f"Warning: could not read {source.file_path}: {e}",
+                        file=sys.stderr,
+                    )
 
             messages = build_messages(item.question_str, chunks)
             answer_text = pipeline.llm.generate(messages)
@@ -231,18 +272,20 @@ class RAGCli:
             k=search_results_data.k,
         )
         output_path = os.path.join(save_directory, filename)
-
-        try:
-
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(final_output.model_dump_json(indent=2))
-
-        except Exception:
-            print("System error", file=sys.stderr)
-            sys.exit(1)
+        write_model_as_json(output_path, final_output, "answers")
 
         print(f"Processed {len(answers_list)} of {total_q} questions")
         print(f"Saved student_search_results_and_answer to {output_path}")
+
+    def answer_streaming(
+        self, query: str, k: int = CHUNKS_PER_QUERY
+    ) -> None:
+        """Answer a query and stream the response to stdout (bonus command)."""
+        if k < 1:
+            print("Chunks retrieved must be greater than 0", file=sys.stderr)
+            sys.exit(1)
+        pipeline = _load_pipeline()
+        pipeline.answer_streaming(query, k=k)
 
     def evaluate(
         self,
@@ -252,19 +295,10 @@ class RAGCli:
         """Evaluate retrieval quality at k=1, 3, 5, 10."""
         from src.evaluation.metrics import recall_at_k
 
-        try:
-
-            with open(search_results_path, "r", encoding="utf-8") as f:
-                raw_student = json.load(f)
-                student_data = StudentSearchResults(**raw_student)
-
-            with open(dataset_path, "r", encoding="utf-8") as f:
-                raw_dataset = json.load(f)
-                dataset = RagDataset(**raw_dataset)
-
-        except Exception:
-            print("System error", file=sys.stderr)
-            sys.exit(1)
+        student_data = load_json_as_model(
+            search_results_path, StudentSearchResults, "Search results"
+        )
+        dataset = load_json_as_model(dataset_path, RagDataset, "Dataset")
 
         answered = [
             q for q in dataset.rag_questions if isinstance(q, AnsweredQuestion)

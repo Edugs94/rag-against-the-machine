@@ -14,13 +14,13 @@ class RAGPipeline:
 
     def answer(self, query: str, k: int = CHUNKS_PER_QUERY) -> str:
         """Executes the full RAG pipeline for a given query."""
-        print("Searching for context...")
         context = self.searcher.search(query, k)
-
-        print("Building the prompt...")
         messages = build_messages(query, context)
-
-        print("Generating answer...")
         response = self.llm.generate(messages)
-
         return response
+
+    def answer_streaming(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
+        """Full RAG pipeline with streamed output to stdout."""
+        context = self.searcher.search(query, k)
+        messages = build_messages(query, context)
+        self.llm.generate_streaming(messages)

@@ -41,6 +41,7 @@ class Searcher:
         Cached entry point. Returns the top-k chunks for a given query,
         falling back to the full hybrid pipeline on cache miss.
         """
+        queryv = str(query)
         key = (query, k)
         if key in self._cache:
             return self._cache[key]
