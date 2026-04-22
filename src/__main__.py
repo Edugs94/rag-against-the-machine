@@ -107,7 +107,8 @@ class RAGCli:
         try:
             k = int(k)
         except ValueError:
-            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            print("Chunks to retrieve must be positive integer",
+                  file=sys.stderr)
             sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
@@ -144,7 +145,8 @@ class RAGCli:
         try:
             k = int(k)
         except ValueError:
-            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            print("Chunks to retrieve must be positive integer",
+                  file=sys.stderr)
             sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
@@ -189,7 +191,8 @@ class RAGCli:
         try:
             k = int(k)
         except ValueError:
-            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            print("Chunks to retrieve must be positive integer",
+                  file=sys.stderr)
             sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
@@ -307,7 +310,8 @@ class RAGCli:
         try:
             k = int(k)
         except ValueError:
-            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            print("Chunks to retrieve must be positive integer",
+                  file=sys.stderr)
             sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
