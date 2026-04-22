@@ -145,7 +145,6 @@ All constants live in `src/constants.py`.
 | `RERANKER_CANDIDATES`      | 30                                       |
 | `RRF_K`                    | 60                                       |
 | `CHUNKS_FOR_LLM`           | 10                                       |
-| `MAX_CHARS_PER_CHUNK`      | 1000                                     |
 | `CHROMA_DB_BATCH_SIZE`     | 250                                      |
 | `BM25_PATH`                | `data/processed/bm25_index`              |
 | `CHROMA_DB_PATH`           | `data/processed/chroma_db`               |
