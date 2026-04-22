@@ -101,6 +101,11 @@ class RAGCli:
 
     def search(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
         """Search for a single query and return results as Pydantic JSON."""
+        try:
+            k = int(k)
+        except ValueError:
+            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
@@ -133,6 +138,11 @@ class RAGCli:
 
     def answer(self, query: str, k: int = CHUNKS_PER_QUERY) -> None:
         """Answer a single query using retrieved context."""
+        try:
+            k = int(k)
+        except ValueError:
+            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
@@ -173,6 +183,11 @@ class RAGCli:
         k: int = CHUNKS_PER_QUERY,
     ) -> None:
         """Process questions from a dataset and output search results."""
+        try:
+            k = int(k)
+        except ValueError:
+            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
@@ -286,6 +301,11 @@ class RAGCli:
         self, query: str, k: int = CHUNKS_PER_QUERY
     ) -> None:
         """Answer a query and stream the response to stdout (bonus command)."""
+        try:
+            k = int(k)
+        except ValueError:
+            print("Chunks to retrieve must be positive integer", file=sys.stderr)
+            sys.exit(1)
         if k < 1:
             print("Chunks retrieved must be greater than 0", file=sys.stderr)
             sys.exit(1)
