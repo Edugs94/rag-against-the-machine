@@ -24,7 +24,7 @@ SYSTEM_RULES = (
     "contain the answer, reply exactly: Context insufficient."
 )
 
-# ------- DEFAULT VALUES -------
+# ------- DEFAULT INTS -------
 
 DEFAULT_CHUNK_SIZE: int = 2000
 MIN_CHUNK_SIZE: int = 150
@@ -37,3 +37,4 @@ CHROMA_DB_BATCH_SIZE: int = 250
 
 RERANKER_CANDIDATES: int = 30
 RRF_K: int = 60
+MIN_OVERLAP_RATIO: float = 0.05

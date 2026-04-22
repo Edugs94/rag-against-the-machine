@@ -4,6 +4,7 @@ from src.models import (
     AnsweredQuestion,
     MinimalSearchResults,
 )
+from constants import MIN_OVERLAP_RATIO
 
 
 def _overlap_length(a: MinimalSource, b: MinimalSource) -> int:
@@ -21,9 +22,12 @@ def _overlap_length(a: MinimalSource, b: MinimalSource) -> int:
 def _source_is_found(
     ground_truth: MinimalSource,
     retrieved: list[MinimalSource],
-    min_overlap_ratio: float = 0.05,
+    min_overlap_ratio: float = MIN_OVERLAP_RATIO,
 ) -> bool:
-    """True if any retrieved source covers >=5% of the ground truth source."""
+    """
+    True if any retrieved source covers >=MIN_OVERLAP_RATIO%
+    of the ground truth source.
+    """
     gt_length = (
         ground_truth.last_character_index
         - ground_truth.first_character_index
