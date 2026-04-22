@@ -3,3 +3,4 @@ data/processed/
 __pycache__/
 moulinette/
 data/output
+*.zip
