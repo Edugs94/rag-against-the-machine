@@ -1,4 +1,4 @@
-# Connection with transformers and the Qwen3-0.6B model
+'''Connection with transformers and the Qwen3-0.6B model'''
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,

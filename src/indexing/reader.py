@@ -1,4 +1,4 @@
-# Logic to extract and read all files
+'''Logic to extract and read all files'''
 from collections.abc import Iterator
 from pathlib import Path
 from filetype_scanner.allowed_extensions import ALLOWED_EXTENSIONS

@@ -1,4 +1,4 @@
-# Templates for System Instructions
+'''Templates for System Instructions'''
 from src.constants import (
     SYSTEM_ROLE,
     SYSTEM_RULES,

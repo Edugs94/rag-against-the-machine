@@ -1,4 +1,4 @@
-# Pipeline for a single query
+'''Pipeline for a single query'''
 from src.retrieval.searcher import Searcher
 from src.generation.llm import LLM
 from src.generation.prompts import build_messages

@@ -1,4 +1,4 @@
-# Data Layer: Pydantic classes
+'''Data Layer: Pydantic classes'''
 import uuid
 from pydantic import BaseModel, Field
 

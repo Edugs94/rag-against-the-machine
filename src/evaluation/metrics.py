@@ -1,4 +1,4 @@
-# Recall@k calculation logic
+'''Recall@k calculation logic'''
 from src.models import (
     MinimalSource,
     AnsweredQuestion,
