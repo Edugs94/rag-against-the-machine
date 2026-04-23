@@ -4,7 +4,7 @@ from src.models import (
     AnsweredQuestion,
     MinimalSearchResults,
 )
-from constants import MIN_OVERLAP_RATIO
+from src.constants import MIN_OVERLAP_RATIO
 
 
 def _overlap_length(a: MinimalSource, b: MinimalSource) -> int:
