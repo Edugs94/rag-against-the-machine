@@ -3,7 +3,7 @@ VENV = .venv
 VENV_FILE = $(VENV)/.pyinstall.timestamp
 UV_FILES = pyproject.toml uv.lock
 UV_RUN = uv run python3
-ARGS ?= index --repo_path="data/raw"
+ARGS ?= index --repo_path="data/raw/vllm-0.10.1"
 
 all: install run
 
@@ -28,13 +28,6 @@ lint: install
 	$(UV_RUN) -m flake8 $(MODULE)
 	@echo "Mypy: "
 	$(UV_RUN) -m mypy $(MODULE) --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
-
-lint-strict: install
-	@echo "Strict linting..."
-	@echo "Flake8: "
-	$(UV_RUN) -m flake8 $(MODULE)
-	@echo "Mypy strict: "
-	$(UV_RUN) -m mypy $(MODULE) --strict
 
 clean:
 	@echo "Cleaning temporary files..."
