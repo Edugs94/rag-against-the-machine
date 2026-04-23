@@ -3,7 +3,7 @@ VENV = .venv
 VENV_FILE = $(VENV)/.pyinstall.timestamp
 UV_FILES = pyproject.toml uv.lock
 UV_RUN = uv run python3
-ARGS ?= index --repo_path="data/raw/vllm-0.10.1"
+ARGS ?= index
 
 all: install run
 
