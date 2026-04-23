@@ -1,33 +1,38 @@
-import os
-os.environ["TRANSFORMERS_VERBOSITY"] = "error"
-import sys  # noqa: E402: E402
-import uuid  # noqa: E402: E402
-import fire  # noqa: E402
-from pathlib import Path  # noqa: E402
-from tqdm import tqdm  # noqa: E402
-from src.models import AnsweredQuestion  # noqa: E402
-from src.generation.prompts import build_messages  # noqa: E402
-from src.indexing.builder import IndexBuilder  # noqa: E402
-from src.retrieval.searcher import Searcher  # noqa: E402
-from src.pipeline import RAGPipeline  # noqa: E402
-from src.utils import (load_json_as_model, write_model_as_json,  # noqa: E402
-                       sanitize_query, ensure_directory)
-from src.constants import (  # noqa: E402
-    BM25_PATH,
-    CHROMA_DB_PATH,
-    DEFAULT_CHUNK_SIZE,
-    CHUNKS_PER_QUERY,
-    DEFAULT_REPO_PATH,
-    MIN_CHUNK_SIZE,
-)
-from src.models import (  # noqa: E402
-    MinimalSource,
-    MinimalSearchResults,
-    StudentSearchResults,
-    MinimalAnswer,
-    StudentSearchResultsAndAnswer,
-    RagDataset,
-)
+try:
+    import os
+    os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+    import sys  # noqa: E402: E402
+    import uuid  # noqa: E402: E402
+    import fire  # noqa: E402
+    from pathlib import Path  # noqa: E402
+    from tqdm import tqdm  # noqa: E402
+    from src.models import AnsweredQuestion  # noqa: E402
+    from src.generation.prompts import build_messages  # noqa: E402
+    from src.indexing.builder import IndexBuilder  # noqa: E402
+    from src.retrieval.searcher import Searcher  # noqa: E402
+    from src.pipeline import RAGPipeline  # noqa: E402
+    from src.utils import (load_json_as_model,  # noqa: E402
+                           write_model_as_json, sanitize_query,
+                           ensure_directory)
+    from src.constants import (  # noqa: E402
+        BM25_PATH,
+        CHROMA_DB_PATH,
+        DEFAULT_CHUNK_SIZE,
+        CHUNKS_PER_QUERY,
+        DEFAULT_REPO_PATH,
+        MIN_CHUNK_SIZE,
+    )
+    from src.models import (  # noqa: E402
+        MinimalSource,
+        MinimalSearchResults,
+        StudentSearchResults,
+        MinimalAnswer,
+        StudentSearchResultsAndAnswer,
+        RagDataset,
+    )
+except KeyboardInterrupt:
+    print("\nInterrupted by user.", file=sys.stderr)
+    sys.exit(130)
 
 
 def _load_searcher() -> Searcher:
