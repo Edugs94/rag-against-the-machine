@@ -1,150 +1,158 @@
-# RAG-against-the-machine
+# RAG against the machine 🤖
 
-> 🚧 Work in progress.
+**A hybrid Retrieval-Augmented Generation system that answers natural-language questions about any codebase, built from scratch in Python.**
 
-RAG pipeline for answering technical questions over the [vLLM](https://github.com/vllm-project/vllm) codebase. Hybrid BM25 + dense retrieval, RRF fusion, cross-encoder rerank, extractive generation with `Qwen/Qwen3-0.6B`.
 
-## Stack
+---
 
-| Layer      | Module                      | What it does                                          |
-|------------|-----------------------------|-------------------------------------------------------|
-| Indexing   | `src/indexing/`             | Reads the repo, chunks files, writes BM25 + Chroma    |
-| Retrieval  | `src/retrieval/searcher.py` | Hybrid search, RRF, cross-encoder rerank              |
-| Generation | `src/generation/`           | Builds the prompt and runs Qwen3-0.6B                 |
-| Evaluation | `src/evaluation/metrics.py` | Recall@k with character overlap                       |
+## Overview
 
-CLI is [`fire`](https://github.com/google/python-fire). Data contracts live in `src/models.py` (Pydantic). The file allowlist is produced by [`filetype_scanner`](https://github.com/Edugs94/filetype_scanner).
+A full Retrieval-Augmented Generation pipeline built from the ground up — from repository ingestion and type-aware chunking to hybrid retrieval, cross-encoder reranking, and local LLM generation. The reference target is the [vLLM](https://github.com/vllm-project/vllm) codebase, but any repository can be indexed and queried. Every layer is decoupled, every data boundary is Pydantic-validated, and the full pipeline runs locally with `Qwen/Qwen3-0.6B`.
 
-## Install
+---
 
-```bash
-make install
-```
+## Architecture
 
-Uses [`uv`](https://github.com/astral-sh/uv) under the hood. `filetype_scanner` is not installed as a package; the `ALLOWED_EXTENSIONS` set is imported directly.
+The system is split into four decoupled stages — **index → retrieve → rerank → generate** — each exposed through a single Python Fire CLI.
 
-## Usage
+![RAG Architecture Diagram](assets/architecture.svg)
 
-All commands are exposed through `python -m src <command>`.
+### Indexing — Corpus Preparation
 
-### Index a repo
+Indexing components own corpus traversal, chunk segmentation, and persistence. They have zero knowledge of queries or generation.
 
-```bash
-python -m src index --repo_path /path/to/vllm --max_chunk_size 2000
-```
+| Class | Responsibility |
+|:---|:---|
+| `RepositoryReader` | Walks the target repository, filters by allowed extensions, streams `(path, content)` pairs |
+| `TextChunker` | Dispatches per file type — Markdown headers, Python class/def boundaries, C/C++/CUDA separators — and preserves exact character offsets |
+| `IndexBuilder` | Orchestrates chunking and writes both the BM25 lexical index and the ChromaDB vector store to disk |
 
-Writes `data/processed/bm25_index*` and `data/processed/chroma_db/` (collection `vllm_docs`).
+### Retrieval — Hybrid Search and Reranking
 
-### Single query
+The retriever combines a lexical and a semantic index, fuses their rankings, and reranks the shortlist with a cross-encoder. All ranking logic lives here; the rest of the pipeline sees only a clean `list[Chunk]`.
 
-```bash
-python -m src search --query "How does continuous batching work?" --k 10
-python -m src answer --query "What is PagedAttention?" --k 10
-```
+| Class | Responsibility |
+|:---|:---|
+| `Searcher` | Loads both indices, orchestrates hybrid search, applies Reciprocal Rank Fusion, calls the cross-encoder, caches top-k results per query |
 
-### Batch
+### Generation — Prompt Assembly and LLM
 
-```bash
-python -m src search_dataset \
-    --dataset_path data/questions.json \
-    --save_directory data/out \
-    --k 10
+Generation is deliberately thin. The retriever does the heavy lifting; the LLM layer only formats context and runs inference.
 
-python -m src answer_dataset \
-    --search_results_path data/out/questions.json \
-    --save_directory data/answers
+| Class | Responsibility |
+|:---|:---|
+| `build_messages` | Formats retrieved snippets into a system+user chat template with explicit source headers |
+| `LLM` | Wraps `Qwen/Qwen3-0.6B` via `transformers`, resolves all Qwen-specific stop tokens, supports both blocking and streaming generation |
+| `RAGPipeline` | Glues `Searcher` + `LLM` together for the single-query path |
 
-python -m src evaluate \
-    --search_results_path data/out/questions.json \
-    --dataset_path data/questions.json
-```
+### Evaluation and Interface
 
-### Dataset format
+| Class | Responsibility |
+|:---|:---|
+| `recall_at_k` | Character-span overlap metric — a ground-truth source is *found* if any retrieved chunk covers ≥ `MIN_OVERLAP_RATIO`% of its span |
+| `RAGCli` | Python Fire entry point — validates arguments, loads resources lazily, surfaces readable errors instead of tracebacks |
 
-`search_dataset` takes a JSON file matching the `RagDataset` schema. Questions can be unanswered (just `question_id` + `question`) or answered (with ground-truth `sources` and `answer`). Unanswered ones are ignored by `evaluate`.
+---
 
-```json
-{
-  "rag_questions": [
-    {
-      "question_id": "c2d6f1a8-9a4e-4a91-bd1d-37d9b0b5e111",
-      "question": "How does PagedAttention work?"
-    },
-    {
-      "question_id": "7e3b1d24-8c5f-4e2a-9a10-1c2f5b3d9a42",
-      "question": "Where is continuous batching implemented?",
-      "sources": [
-        {
-          "file_path": "vllm/core/scheduler.py",
-          "first_character_index": 1240,
-          "last_character_index": 2310
-        }
-      ],
-      "answer": "The Scheduler class in vllm/core/scheduler.py handles continuous batching."
-    }
-  ]
-}
-```
+## Retrieval Pipeline
 
-## How it works
+The retriever is the core of the project. Each stage trades recall for precision as candidates flow through it.
 
-**Chunking.** Split strategy depends on the file type:
+| Stage | Technology | Purpose |
+|:---|:---|:---|
+| Lexical search | `bm25s` | Exact-match recall — strong on rare identifiers typical of code |
+| Dense search | `chromadb` + `BAAI/bge-small-en-v1.5` | Semantic recall — handles paraphrased natural-language queries |
+| Fusion | Reciprocal Rank Fusion | Score-scale-agnostic merge of the two rankings |
+| Reranking | `cross-encoder/ms-marco-MiniLM-L-6-v2` | High-precision scoring of `(query, chunk)` pairs on the shortlist |
+| Caching | In-memory dict keyed by `(query, k)` | Zero-cost repeated queries during batch evaluation |
 
-- `.md` / `.mdx`: header-based split (H1–H6). Sections that already fit stay whole.
-- `.py`: cuts on `class` / `def`.
-- `.cpp`, `.cu`, `.cuh`, `.h`, `.hpp`: cuts on `}` and `;`.
-- anything else: newlines and spaces.
+The candidate pool size is `max(k*3, 50)` for each retriever and `max(k*2, 30)` after RRF — enough headroom for the reranker to recover relevant chunks without paying the full cost on thousands of candidates.
 
-Every chunk stores `file_path`, `first_character_index`, `last_character_index`. Non-UTF-8 files are skipped.
+---
 
-**Retrieval.** For each query:
+## Key Technical Decisions
 
-1. BM25 (`bm25s`) and dense (Chroma + `BAAI/bge-small-en-v1.5`) each return 50 candidates.
-2. RRF (K = 60) combines both rankings and keeps 30.
-3. Cross-encoder `ms-marco-MiniLM-L-6-v2` reranks and returns top-`k` (default 10).
+- **Type-aware chunking**: Markdown is split by H1–H6 headers, Python by `class`/`def` boundaries, C/C++/CUDA by `}`/`;`. A single recursive splitter would break functions mid-body and markdown mid-section — retrieving a complete unit matters far more than uniform size.
+- **RRF over weighted sum**: BM25 and cosine similarity live on incomparable scales. Rank-based fusion sidesteps the tuning problem entirely and is robust to corpus changes.
+- **Rerank only the shortlist**: Cross-encoders are 100× slower than bi-encoders. Running them on `max(k*2, 30)` candidates captures most of the quality gain at a fraction of the cost.
+- **Persistent indices**: BM25 and Chroma are written to `data/processed/` once; every subsequent command is cold-start only for the models, not the corpus.
+- **Deterministic generation**: `do_sample=False` plus a careful resolution of Qwen's `<|im_end|>` / `<|endoftext|>` stop tokens — reproducible answers and no trailing garbage.
+- **Pydantic at every boundary**: Datasets, search results, answers — every JSON artifact is a typed model. Malformed input fails loudly and early.
 
-The `Searcher` caches results in memory by `(query, k)`.
-
-**Generation.** `Qwen/Qwen3-0.6B`, greedy decoding, `max_new_tokens=128`, `enable_thinking=False`. The prompt concatenates the top 10 chunks (each truncated at 1000 chars on a word boundary) after a system message that restricts the model to the context. If the context does not contain the answer the model must reply exactly `Context insufficient`.
-
-**Evaluation.** Recall@k with character-overlap matching: a retrieved source is a hit when the file path matches and the interval overlaps at least 5% of the ground-truth interval. Reported at k ∈ {1, 3, 5, 10}.
-
-## Project structure
-
-```
-src/
-├── __main__.py            Fire CLI
-├── constants.py           hyperparameters
-├── models.py              Pydantic schemas
-├── pipeline.py            Searcher + LLM
-├── indexing/
-│   ├── reader.py
-│   ├── chunker.py
-│   └── builder.py
-├── retrieval/
-│   └── searcher.py
-├── generation/
-│   ├── llm.py
-│   └── prompts.py
-└── evaluation/
-    └── metrics.py
-```
+---
 
 ## Configuration
 
-All constants live in `src/constants.py`.
+Chunk size is configurable via `--max_chunk_size` (default `2000`, min `150`). Model names, index paths, RRF constant, overlap ratio and all other hyperparameters live in `src/constants.py` — a single file to tune the entire pipeline.
 
-| Constant                   | Value                                    |
-|----------------------------|------------------------------------------|
-| `DEFAULT_EMBEDDING_MODEL`  | `BAAI/bge-small-en-v1.5`                 |
-| `DEFAULT_LLM_MODEL`        | `Qwen/Qwen3-0.6B`                        |
-| `RERANKER_MODEL`           | `cross-encoder/ms-marco-MiniLM-L-6-v2`   |
-| `DEFAULT_CHUNK_SIZE`       | 2000                                     |
-| `DEFAULT_CHUNK_OVERLAP`    | 150                                      |
-| `CHUNKS_PER_QUERY`           | 10                                       |
-| `RERANKER_CANDIDATES`      | 30                                       |
-| `RRF_K`                    | 60                                       |
-| `CHUNKS_FOR_LLM`           | 10                                       |
-| `CHROMA_DB_BATCH_SIZE`     | 250                                      |
-| `BM25_PATH`                | `data/processed/bm25_index`              |
-| `CHROMA_DB_PATH`           | `data/processed/chroma_db`               |
+## Evaluation
+
+Retrieval quality is measured with **recall@k** using character-span overlap: a ground-truth source is considered *found* if any retrieved chunk covers ≥ `MIN_OVERLAP_RATIO`% of its span. Evaluation runs against the provided `AnsweredQuestions` datasets and reports scores at k ∈ {1, 3, 5, 10}.
+
+## CLI Commands
+
+| Command | Action |
+|:---|:---|
+| `index` | Ingest the repository and persist BM25 + ChromaDB indices |
+| `search` | Retrieve the top-`k` chunks for a single query |
+| `answer` | Retrieve and generate an answer for a single query |
+| `search_dataset` | Batch retrieval over a JSON dataset of questions |
+| `answer_dataset` | Generate answers from a previously saved search file |
+| `evaluate` | Compute `recall@{1,3,5,10}` against ground truth |
+| `answer_streaming` | Stream generation token by token to stdout |
+
+---
+
+## Setup
+
+This project **does not ship the corpus** it indexes. Drop the repository you want to query into `data/raw/` and build the index:
+
+```bash
+# Option 1 — reference target: vLLM 0.10.1
+mkdir -p data/raw
+curl -L https://github.com/vllm-project/vllm/archive/refs/tags/v0.10.1.tar.gz \
+  | tar -xz -C data/raw
+
+# Option 2 — any other repository
+cp -r /path/to/your/repo data/raw/
+
+# Build the index
+uv run python -m src index --max_chunk_size 2000
+```
+
+Indices are written to `data/processed/` and reused by every subsequent command.
+
+## Installation & Usage
+
+**Requirements:** Python 3.10+, [`uv`](https://github.com/astral-sh/uv)
+
+**Option 1: Using Make (Recommended)**
+```bash
+make install
+make run
+```
+
+**Option 2: Using `uv` manually**
+```bash
+uv sync
+uv run python -m src answer "What are the key capabilities of Ray Serve LLM for vLLM deployment?" --k 10
+```
+
+---
+
+## Technical Stack
+
+| Component | Technology |
+|:---|:---|
+| Language | Python 3.10+ |
+| Lexical retrieval | `bm25s` |
+| Vector store | `chromadb` |
+| Embeddings | `BAAI/bge-small-en-v1.5` |
+| Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| LLM | `Qwen/Qwen3-0.6B` via `transformers` |
+| Text splitting | `langchain-text-splitters` |
+| Data validation | Pydantic |
+| CLI | Python Fire |
+| Progress bars | tqdm |
+| Linting | flake8 + mypy |
+| Package manager | uv |
