@@ -44,4 +44,4 @@ re: fclean all
 test: install
 	$(UV_RUN) -m pytest
 
-.PHONY: all run debug lint lint-strict clean fclean re install test
+.PHONY: all run debug lint clean fclean re install test
