@@ -55,6 +55,9 @@ def _load_pipeline() -> RAGPipeline:
             file=sys.stderr,
         )
         sys.exit(1)
+    except OSError as e:
+        print(f"Failed to load pipeline resources: {e}", file=sys.stderr)
+        sys.exit(1)
     except RuntimeError as e:
         print(f"Failed to initialize pipeline: {e}", file=sys.stderr)
         sys.exit(1)
@@ -71,8 +74,14 @@ class RAGCli:
         max_chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
         """Index the repository and save BM25 and Chroma models."""
+        try:
+            max_chunk_size = int(max_chunk_size)
+        except ValueError:
+            print("Chunks size must be positive integer",
+                  file=sys.stderr)
+            sys.exit(1)
         if max_chunk_size <= MIN_CHUNK_SIZE:
-            print(f"Chunk size must be greater than {max_chunk_size}",
+            print(f"Chunk size must be greater than {MIN_CHUNK_SIZE}",
                   file=sys.stderr)
             sys.exit(1)
         index_builder = IndexBuilder(
@@ -365,7 +374,11 @@ class RAGCli:
 
 
 def main() -> None:
-    fire.Fire(RAGCli)
+    try:
+        fire.Fire(RAGCli)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user.", file=sys.stderr)
+        sys.exit(130)
 
 
 if __name__ == "__main__":

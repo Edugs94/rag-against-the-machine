@@ -11,7 +11,6 @@ from src.constants import (
     CHUNKS_PER_QUERY,
     RRF_K,
     RERANKER_MODEL,
-    RERANKER_CANDIDATES,
 )
 
 
@@ -42,7 +41,6 @@ class Searcher:
         Cached entry point. Returns the top-k chunks for a given query,
         falling back to the full hybrid pipeline on cache miss.
         """
-        query = str(query)
         key = (query, k)
         if key in self._cache:
             return self._cache[key]
@@ -56,13 +54,14 @@ class Searcher:
         """
         Execute hybrid search with RRF fusion and cross-encoder reranking.
         """
-        candidate_pool_size = 50
+        candidate_pool_size = max(k * 3, 50)
+        rerank_pool_size = max(k * 2, 30)
 
         bm25_results = self._bm25_search(query, candidate_pool_size)
         chromadb_results = self._chromadb_search(query, candidate_pool_size)
 
         rrf_candidates = self._apply_rrf(
-            bm25_results, chromadb_results, k=RERANKER_CANDIDATES
+            bm25_results, chromadb_results, k=rerank_pool_size
         )
 
         return self._rerank(query, rrf_candidates, k)

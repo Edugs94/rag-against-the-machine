@@ -35,6 +35,7 @@ class TextChunker:
         self, file_path: str, text: str
     ) -> Iterator[dict[str, Any]]:
         """Route to the appropriate chunking strategy."""
+
         if file_path.endswith((".md", ".mdx")):
             yield from self._chunk_markdown(file_path, text)
             return
@@ -50,12 +51,8 @@ class TextChunker:
     def _chunk_markdown(
         self, file_path: str, text: str
     ) -> Iterator[dict[str, Any]]:
-        """
-        Split markdown by headers. Sections that exceed `max_size` are
-        further split with a recursive character splitter applying
-        `overlap`. Sections that already fit emit a single chunk with
-        no overlap (they are semantically complete).
-        """
+        """Split markdown by headers,
+        large sections are subdivided with overlap."""
         try:
             sections = self._md_header_splitter.split_text(text)
         except (ValueError, TypeError, IndexError, AttributeError):
@@ -101,12 +98,8 @@ class TextChunker:
     def _locate_sections(
         self, text: str, sections: list[Any]
     ) -> list[tuple[str, int | None]]:
-        """
-        Resolve each header-split section to its (text, start_offset) in
-        the original file. Uses the first line of each section (usually
-        the header) as an anchor. Searches forward from the previous
-        offset to handle repeated headers safely.
-        """
+        """Locate each section's start offset in the
+        original text using its first line as anchor."""
         results: list[tuple[str, int | None]] = []
         search_from = 0
         for section in sections:

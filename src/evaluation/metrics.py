@@ -67,11 +67,7 @@ def recall_at_k(
     search_results: list[MinimalSearchResults],
     k: int,
 ) -> float:
-    """Mean recall@k across a whole dataset.
-
-    Questions are matched by question_id. Questions in the dataset but
-    not in the search results are treated as recall 0.
-    """
+    """Mean recall@k across a whole dataset."""
     results_by_id = {r.question_id: r for r in search_results}
 
     per_question = []
