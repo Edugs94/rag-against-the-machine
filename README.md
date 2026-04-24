@@ -15,7 +15,7 @@ A full Retrieval-Augmented Generation pipeline built from the ground up — from
 
 The system is split into four decoupled stages — **index → retrieve → rerank → generate** — each exposed through a single Python Fire CLI.
 
-![RAG Architecture Diagram](assets/architecture.svg)
+![RAG Architecture Diagram](assets/architecture_v.svg)
 
 ### Indexing — Corpus Preparation
 
